@@ -1,7 +1,13 @@
 //Program to control the arm of the DORA Rover
 //Antares Rahman & Moustafa Ndiaye
 
-#include <Servo.h> 
+#include <Servo.h>
+#include <NewPing.h>
+
+#define SONAR_NUM 1 // Number or sensors.
+#define MAX_DISTANCE 300 // Max distance in cm.
+#define PING_INTERVAL 33 // Milliseconds between pings.
+
 Servo baseServo;      //servo on the bottom
 Servo turnServo1;     //Big servo on top of the base
 Servo turnServo2;     //
@@ -16,7 +22,6 @@ int pos1 = 0;
 int pos2 = 0;
 int pos3 = 0;
 int pos4 = 0;
-int var = LOW;
 
 
 void setup() {
@@ -30,8 +35,6 @@ void setup() {
   turnServo2.attach(6);
   turnServo3.attach(3);
   turnServo4.attach(11);
-  digitalWrite(4, LOW);
-  digitalWrite(7, LOW);
   
 }
 void rePositionServo(Servo servo, int posF, int spd) {   //send intitial position and desired position
@@ -61,28 +64,18 @@ void rePositionServo(Servo servo, int posF, int spd) {   //send intitial positio
 
 void loop() {
   
-  while (var==LOW) {
-    var = digitalRead(7);
-  }
-  var = LOW; 
-  
   rePositionServo(baseServo, 90, 50);
   rePositionServo(turnServo1, 90, 50);
   rePositionServo(turnServo2, 50, 50);
   rePositionServo(turnServo3, 80, 50);
   rePositionServo(turnServo4, 0, 30);
   
+  int val = digitalRead(7);
   
-//  if (analogRead(7)==HIGH) {
+  digitalWrite(4, HIGH);
+  delay(4000);
+  digitalWrite(4, LOW);
   
-    digitalWrite(4, HIGH);
-    delay(1000);
-    digitalWrite(4, LOW);
-    
-    digitalWrite(13, HIGH);
-    delay(2000);
-    digitalWrite(13, LOW);
-   
     rePositionServo(turnServo3, 170, 45);    //Servo at grip hinge 3
     
     rePositionServo(turnServo1, 20, 45);      //Big serson on top of platform
@@ -105,5 +98,4 @@ void loop() {
     digitalWrite(4, HIGH);
     delay(1000);
     digitalWrite(4, LOW);
-//  }
 }
