@@ -1,0 +1,150 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+
+counter VAR Byte
+Near VAR Byte
+TurnTime VAR Byte
+a VAR Word(2)
+
+PingL       PIN     0
+Ping        PIN     1
+PingR       PIN     2
+INPUT 4
+OUTPUT 5
+
+time        VAR     Word
+cmL         VAR     Word
+cm          VAR     Word
+cmR         VAR     Word
+
+a(0) = %0001110000000000 'left wheels
+a(1) = %1110000000000000 'right wheels
+Near = 30
+TurnTime = 200
+
+DIRS = $FF20
+OUTS = 0
+
+Main:
+  FOR counter = 1 TO 200
+    OUTS = a(0)
+    PULSOUT 8, 0
+    OUTS = a(1)
+    PULSOUT 8, 2500
+    OUTS = 0
+    GOSUB GetSonar
+  NEXT
+  GOSUB Arm
+GOTO Main
+
+GetSonar:
+  LOW PingL
+  PULSOUT PingL, 5
+  PULSIN PingL, 1, time
+  cmL = 2260 ** time 'conversion to cm
+
+  LOW Ping
+  PULSOUT Ping, 5
+  PULSIN Ping, 1, time
+  cm = 2260 ** time  'conversion to cm
+
+  LOW PingR
+  PULSOUT PingR, 5
+  PULSIN PingR, 1, time
+  cmR = 2260 ** time 'conversion to cm
+
+  'IF (cmL < Near AND cm < Near AND cmR < Near) THEN '111 trapped!
+  '  GOSUB LtSharp
+  'ELSEIF (cmL < Near AND cm < Near AND cmR > Near) THEN '110 bump on left-front
+  '  GOSUB RtSharp
+  'ELSEIF (cmL > Near AND cm < Near AND cmR < Near) THEN '011 bump on right-front
+  '  GOSUB LtSharp
+  IF (cmL < Near AND cmR > Near) THEN '100 bump on left
+    GOSUB RtSharp
+  ELSEIF (cmL > Near AND cmR < Near) THEN '001 bump on right
+    GOSUB LtSharp
+  ELSEIF (cmL > Near AND cm < Near AND cmR > Near) THEN '010 bump in front
+    GOSUB Bwd
+    GOSUB LtSharp
+  ELSEIF (cmL < Near AND cm > Near AND cmR < Near) THEN '101 narrow path
+    IF (cmL < 10 AND cmR < 10) THEN 'avoid wheels getting stuck
+      GOSUB Bwd
+      GOSUB RtSharp
+    ENDIF
+  ENDIF
+RETURN
+
+LtSharp:
+  FOR counter = 1 TO TurnTime
+    OUTS = a(0)
+    PULSOUT 8, 2500
+    OUTS = a(1)
+    PULSOUT 8, 2500
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+RtSharp:
+  FOR counter = 1 TO TurnTime
+    OUTS = a(0)
+    PULSOUT 8, 0
+    OUTS = a(1)
+    PULSOUT 8, 0
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+Bwd:
+  FOR counter = 1 TO TurnTime
+    OUTS = a(1)
+    PULSOUT 8, 0
+    OUTS = a(0)
+    PULSOUT 8, 2500
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+LtBlunt:
+  FOR counter = 1 TO TurnTime
+    OUTS = %0001100000000000 '2 front wheels left
+    PULSOUT 8, 2500          'reverse
+    OUTS = a(1)
+    PULSOUT 8, 2500
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+RtBlunt:
+  FOR counter = 1 TO TurnTime
+    OUTS = %1100000000000000 '2 front wheels right
+    PULSOUT 8, 0             'reverse
+    OUTS = a(0)
+    PULSOUT 8, 0
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+UTurn:
+  FOR counter = 1 TO TurnTime
+    OUTS = a(0)
+    PULSOUT 8, 2500
+    OUTS = a(1)
+    PULSOUT 8, 2500
+    OUTS = 0
+    PAUSE 20
+  NEXT
+RETURN
+
+Arm:
+  DO WHILE IN4=0
+    HIGH 5 'high to arduino
+    PAUSE 20
+  LOOP
+  DO : LOOP WHILE IN4=0 'wait for arduino
+  LOW 5  'low to arduino
+RETURN
